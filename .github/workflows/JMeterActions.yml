@@ -1,0 +1,74 @@
+name: Run JMeter Tests with GitActions
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out repository
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      # Step 2: Set up Java
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # Step 3: Install JMeter
+      - name: Install JMeter
+        run: |
+          java -version
+          wget https://downloads.apache.org//jmeter/binaries/apache-jmeter-5.6.3.zip -O jmeter.zip
+          unzip -o jmeter.zip
+          sudo mv apache-jmeter-5.6.3 /usr/share/jmeter
+          echo "/usr/share/jmeter/bin" | sudo tee -a /etc/paths
+          export PATH=$PATH:/usr/share/jmeter/bin
+          echo "PATH=$PATH:/usr/share/jmeter/bin" >> $GITHUB_ENV
+          jmeter -v
+        
+  # Step 4: Install JMeter Plugins
+      - name: Install JMeter Plugins
+        run: |
+          cd /usr/share/jmeter
+          wget -q --no-check-certificate https://jmeter-plugins.org/files/packages/jpgc-dummy-0.4.zip -O dummy-plugin.zip
+          unzip -o dummy-plugin.zip && rm dummy-plugin.zip
+          wget -q --no-check-certificate https://jmeter-plugins.org/files/packages/jpgc-casutg-2.10.zip -O advanced-thread-plugin.zip
+          unzip -o advanced-thread-plugin.zip && rm advanced-thread-plugin.zip
+
+
+      # Step 5: Debug PATH
+      - name: Debug PATH
+        run: echo $PATH
+
+      # Step 6: Verify JMeter Installation
+      - name: Verify JMeter Installation
+        run: jmeter --version
+
+     # step 7: Run JMeter Test Plan
+      - name: Run JMeter Test Plan
+        run: |
+          set -e
+          ls -R ${{ github.workspace }}  # Debug: list all files to ensure correct paths
+          date
+          cd ${{ github.workspace }}/src/test/jmeter
+          mkdir results
+          jmeter -n -t RoadOps_AAhelp2_CombinedLoadTest.jmx -l results/smoketest.jtl -e -o results/smoketest.html -JnumberOfUsers=1  -JrampupTime=10  -JtestDuration=120 -Jxstream.whitelist.add=org.apache.jmeter.save.ScriptWrapper
+
+          date
+
+
+# step 8: Upload Test Results
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-results
+          path: ${{ github.workspace }}/src/test/jmeter/results/
+
+      
+
+

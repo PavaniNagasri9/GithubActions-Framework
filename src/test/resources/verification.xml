@@ -1,0 +1,10 @@
+<testSet>
+    <nthPercRespTimeTest>
+        <testName>users - 90 Percentile response time</testName>
+        <description>Verify 90th percentile</description>
+        <transactionName>Users</transactionName>
+        <regexp/>
+        <percentile>90</percentile>
+        <maxRespTime>3500</maxRespTime>
+    </nthPercRespTimeTest>  
+</testSet>
